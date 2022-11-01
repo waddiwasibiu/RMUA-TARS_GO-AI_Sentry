@@ -244,6 +244,7 @@ cv::Mat mask2(3, 3, CV_64FC1);
 cv::Mat org2(3, 1, CV_64FC1);
 cv::Mat warp_position2(3, 1, CV_64FC1);
 
+// 筛除场地外的(误）识别目标
 bool isEdge(cv::Point2f map[], cv::Point p, int camera_type)
 {
     struct strightLine
@@ -275,7 +276,7 @@ bool isEdge(cv::Point2f map[], cv::Point p, int camera_type)
         }
     }
 }
-
+// 鼠标回调函数
 static void onMouse1(int event ,int x, int y, int flags, void* userInput)
 {
     if(k >= 5) return;
@@ -333,7 +334,7 @@ static void onMouse2(int event ,int x, int y, int flags, void* userInput)
         }
     }
 }
-
+// 地图变换
 void map1()
 {
     cv::namedWindow("map1");
@@ -354,13 +355,14 @@ void map1()
         cv::Matx33d intrinsic_matrix;
         cv::Vec4d distortion_coeffs;
         getCameraIntrinsicMatrix(cam.cam_serial_num[1], intrinsic_matrix, distortion_coeffs);
-        cv::Mat undistort_img; //图像畸变校正（耗时）
-
+        cv::Mat undistort_img; 
+        
+        //图像畸变校正（耗时）
         cv::undistort(img, undistort_img, intrinsic_matrix, distortion_coeffs,
             cv::getOptimalNewCameraMatrix(intrinsic_matrix, distortion_coeffs, img.size(), 1, img.size(), 0));
 
         // cv::Mat dst = img.clone();
-        cv::resize(undistort_img,dst,cv::Size(1024,1024));
+        cv::resize(undistort_img,dst,cv::Size(1024,1024)); // 上场的时候时间紧迫，用freeratio窗口还得调大小不方便，干脆resize然后show原图
 
         int sk = k <= 4 ? k : 4;
         for(int i=1;i<=sk;i++)
@@ -472,7 +474,8 @@ void map2()
 
 void detect1(int camSN, std::string engine_name)
 {
-    cudaSetDevice(DEVICE0);
+    cudaSetDevice(DEVICE0); // 选择使用的GPU
+
     // deserialize the .engine and run inference
     std::ifstream file(engine_name, std::ios::binary);
     if (!file.good()) {
@@ -516,6 +519,8 @@ void detect1(int camSN, std::string engine_name)
     cudaStream_t stream;
     CUDA_CHECK(cudaStreamCreate(&stream));
 
+    // 以上这些都是源码，不用管
+
     cv::Matx33d intrinsic_matrix;
     cv::Vec4d distortion_coeffs;
     getCameraIntrinsicMatrix(camSN, intrinsic_matrix, distortion_coeffs);
@@ -536,8 +541,9 @@ void detect1(int camSN, std::string engine_name)
             continue;
         }
 
-        cv::Mat undistort_img; //图像畸变校正（耗时）
+        cv::Mat undistort_img;
 
+         //图像畸变校正（耗时）
         cv::undistort(img, undistort_img, intrinsic_matrix, distortion_coeffs,
             cv::getOptimalNewCameraMatrix(intrinsic_matrix, distortion_coeffs, img.size(), 1, img.size(), 0));
 
